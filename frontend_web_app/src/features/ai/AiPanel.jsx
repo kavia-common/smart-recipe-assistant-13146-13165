@@ -435,6 +435,7 @@ export default function AiPanel({
             color: '#ef4444',
             padding: 10,
             borderRadius: 8,
+            whiteSpace: 'pre-wrap',
           }}
         >
           {error.message || 'Something went wrong fetching AI suggestions.'}

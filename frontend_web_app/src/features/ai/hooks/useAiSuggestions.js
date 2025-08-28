@@ -1,5 +1,6 @@
 import { useCallback, useMemo, useState } from 'react';
 import perplexityClient from '../services/perplexityClient';
+import { API_BASE_URL } from '../../../services/apiConfig';
 
 /**
  * PUBLIC_INTERFACE
@@ -50,8 +51,16 @@ export default function useAiSuggestions(initialState = null) {
       const res = await perplexityClient.suggestRecipes(params);
       setData(res);
     } catch (e) {
-      // Normalize error to ensure .message is present for UI
-      const normalized = e instanceof Error ? e : new Error('Failed to fetch AI suggestions.');
+      // Provide actionable hints for common misconfigurations
+      let normalized = e instanceof Error ? e : new Error('Failed to fetch AI suggestions.');
+      if (normalized && /Network error/i.test(normalized.message)) {
+        normalized = new Error(
+          `${normalized.message}\n` +
+          `Hint: Verify the backend is running and reachable at ${API_BASE_URL}.\n` +
+          'Also confirm CORS allows requests from this frontend origin.\n' +
+          'See frontend_web_app/.env.example for REACT_APP_API_BASE_URL configuration.'
+        );
+      }
       setError(normalized);
     } finally {
       setLoading(false);

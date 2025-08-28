@@ -64,8 +64,37 @@ async function suggestRecipes(payload) {
   if (!payload || !Array.isArray(payload.ingredients)) {
     throw new Error('suggestRecipes requires a payload with an ingredients array.');
   }
-  const { data } = await httpClient.post('/ai/perplexity/suggest', payload);
-  return data;
+  // defensive: ensure the array is not empty
+  if (payload.ingredients.length === 0) {
+    throw new Error('Please provide at least one ingredient.');
+  }
+
+  try {
+    const { data } = await httpClient.post('/ai/perplexity/suggest', payload);
+    return data;
+  } catch (err) {
+    // Build a more helpful message for common Axios/network scenarios
+    const status = err?.response?.status;
+    const backendMsg = err?.response?.data?.message || err?.response?.data?.error;
+    const isNetworkError = err?.message && /Network Error/i.test(err.message);
+
+    let message = 'Failed to fetch AI suggestions.';
+    if (isNetworkError) {
+      message =
+        'Network error while contacting the AI service. ' +
+        'Please ensure the backend is reachable and REACT_APP_API_BASE_URL is set correctly. ' +
+        'If you are running in a preview environment, localhost:4000 will not be accessible.';
+    } else if (status) {
+      message = `AI service request failed (${status}).`;
+      if (backendMsg) message += ` ${backendMsg}`;
+    } else if (backendMsg) {
+      message = backendMsg;
+    }
+
+    const enhancedError = new Error(message);
+    enhancedError.cause = err;
+    throw enhancedError;
+  }
 }
 
 const perplexityClient = {
