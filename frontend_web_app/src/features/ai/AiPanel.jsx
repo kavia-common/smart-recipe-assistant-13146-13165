@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useMemo, useState, useEffect } from 'react';
 import RecipeCard from '../../components/RecipeCard';
 import { useAiSuggestions } from './hooks';
 
@@ -17,11 +17,22 @@ import { useAiSuggestions } from './hooks';
  * Environment:
  * - Uses configured httpClient base URL from src/services/apiConfig.js.
  *
+ * Props:
+ * - initialIngredients?: string[]        // optional initial ingredients to prefill input
+ * - initialDiet?: string                 // optional initial diet (e.g., 'vegetarian')
+ * - initialExcludes?: string[]           // optional list of excluded ingredients
+ * - initialServings?: number             // optional servings count to prefill
+ *
  * Usage:
  *   import AiPanel from '@/features/ai/AiPanel';
- *   <AiPanel />
+ *   <AiPanel initialIngredients={['tomato', 'basil']} initialDiet="vegetarian" />
  */
-export default function AiPanel() {
+export default function AiPanel({
+  initialIngredients,
+  initialDiet,
+  initialExcludes,
+  initialServings,
+}) {
   // UI state
   const [mode, setMode] = useState('discover'); // 'discover' | 'guide'
   const [ingredientsInput, setIngredientsInput] = useState('');
@@ -33,6 +44,26 @@ export default function AiPanel() {
   const [chat, setChat] = useState([]); // local simple chat transcript [{role:'user'|'assistant', content:string}]
 
   const { data, loading, error, suggest, reset } = useAiSuggestions();
+
+  // Prefill from optional props (profile or demo context)
+  useEffect(() => {
+    if (Array.isArray(initialIngredients) && initialIngredients.length > 0) {
+      setIngredientsInput(initialIngredients.join(', '));
+    }
+  }, [initialIngredients]);
+  useEffect(() => {
+    if (typeof initialDiet === 'string') setDiet(initialDiet);
+  }, [initialDiet]);
+  useEffect(() => {
+    if (Array.isArray(initialExcludes) && initialExcludes.length > 0) {
+      setExcludes(initialExcludes.join(', '));
+    }
+  }, [initialExcludes]);
+  useEffect(() => {
+    if (typeof initialServings === 'number' && !Number.isNaN(initialServings)) {
+      setServings(String(initialServings));
+    }
+  }, [initialServings]);
 
   const ingredients = useMemo(
     () =>
